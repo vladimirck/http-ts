@@ -11,46 +11,34 @@ var config: APIConfig = {
     fileserverHits: 0,
 };
 
+app.use(express.json());
 app.use(middlewareLogResponses);
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 app.get(API + "/healthz",handleReadiness);
 app.get(ADMIN + "/metrics", handleHitsCounter);
 app.post(ADMIN + "/reset", handleResetCounter);
-app.post(API + "/validate_chirp", handleValidateChirp);
+app.post(API + "/validate_chirp", express.json(), handleValidateChirp);
 
 function handleValidateChirp(req: Request, res: Response) {
-    var reqBody = '';
-    req.on('data', (chunk) => {
-        reqBody += chunk;
-    });
-
-    req.on('end', () => {
-        var chirp: {body:string, error?:string};
-        try{
-            chirp = JSON.parse(reqBody);
-        } catch (e) {
-            res.set("Content-Type", "application/json");
-            res.status(400).send(JSON.stringify({ error: "Something went wrong" }));
-            return;
-        }
+    var body = req.body;
+    
         
-        if (!chirp.body){
-            res.set("Content-Type", "application/json");
-            res.status(400).send(JSON.stringify({ error: "Something went wrong" }));
-            return;
-        }
-
-        if (chirp.body.length > 140) {
-            res.set("Content-Type", "application/json");
-            res
-              .status(400)
-              .send(JSON.stringify({ error: "Chirp is too long" }));
-            return;
-        }
-        
+    if (body === undefined) {
         res.set("Content-Type", "application/json");
-        res.status(200).send(JSON.stringify({ valid: true }));
-    });
+        res.status(400).send(JSON.stringify({ error: "Something went wrong" }));
+        return;
+    }
+
+    if (body.length > 140) {
+        res.set("Content-Type", "application/json");
+        res
+            .status(400)
+            .send(JSON.stringify({ error: "Chirp is too long" }));
+        return;
+    }
+    
+    res.set("Content-Type", "application/json");
+    res.status(200).send(JSON.stringify({ valid: true }));
     
 }
 
