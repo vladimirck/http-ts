@@ -5,15 +5,17 @@ import { stat } from "node:fs";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const API = "/api";
+const ADMIN = "/admin";
 var config: APIConfig = {
     fileserverHits: 0,
 };
 
 app.use(middlewareLogResponses);
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
-app.get("/healthz",handleReadiness);
-app.get("/metrics", handleHitsCounter);
-app.get("/reset", handleResetCounter);
+app.get(API + "/healthz",handleReadiness);
+app.get(ADMIN + "/metrics", handleHitsCounter);
+app.post(ADMIN + "/reset", handleResetCounter);
 
 function handleReadiness(req: Request, res: Response) {
     res.set("Content-Type", "text/plain");
@@ -32,8 +34,8 @@ function middlewareLogResponses(req: Request, res: Response, next: () => void) {
 }
 
 function middlewareMetricsInc(req: Request, res: Response, next: () => void) {
-  config.fileserverHits += 1;
-  next();
+    config.fileserverHits += 1;
+    next();
 }
 
 function handleResetCounter(req: Request, res: Response) {
@@ -43,8 +45,15 @@ function handleResetCounter(req: Request, res: Response) {
 }
 
 function handleHitsCounter(req: Request, res: Response) {
-    res.set("Content-Type", "text/plain");
-    res.status(200).send(`Hits: ${config.fileserverHits}\n`);
+    res.set("Content-Type", "text/html; charset=UTF-8");
+    res.status(200).send(
+        `<html>
+            <body>
+                <h1>Welcome, Chirpy Admin</h1>
+                <p>Chirpy has been visited ${config.fileserverHits} times!</p>
+            </body>
+        </html>`
+    );
 }
 
 app.listen(PORT, () =>{
